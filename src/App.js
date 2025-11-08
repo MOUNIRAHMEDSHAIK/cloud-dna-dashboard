@@ -206,7 +206,7 @@ useEffect(() => {
   async function fetchData() {
     try {
       const response = await get({
-        apiName: 'resourceApi',
+        apiName: 'CloudDNAAPI',
         path: '/resources'
       }).response;
 
