@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-clouddnadashboard-dev-0fa1a-authRole",
+      "UnauthRoleArn": "arn:aws:iam::909395512232:role/amplify-clouddnadashboard-dev-0fa1a-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::909395512232:role/amplify-clouddnadashboard-dev-0fa1a-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-clouddnadashboard-dev-0fa1a-deployment",
+      "UnauthRoleName": "amplify-clouddnadashboard-dev-0fa1a-unauthRole",
+      "StackName": "amplify-clouddnadashboard-dev-0fa1a",
+      "StackId": "arn:aws:cloudformation:ap-south-1:909395512232:stack/amplify-clouddnadashboard-dev-0fa1a/6675b330-bc5f-11f0-bd9f-0acbf0e51ffb",
+      "AmplifyAppId": "d369iavldgeoef"
+    }
+  }
+}
