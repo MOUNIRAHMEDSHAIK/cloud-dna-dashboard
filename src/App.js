@@ -1,6 +1,7 @@
 // src/App.js
 // src/App.js
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import { fetchResources, analyzeResourceImpact } from "./api";
 import { Amplify } from 'aws-amplify';
 import { get, post } from '@aws-amplify/api-rest';
 import awsExports from './aws-exports';
@@ -206,7 +207,7 @@ useEffect(() => {
   async function fetchData() {
     try {
       const response = await get({
-        apiName: 'CloudDNAAPI',
+        apiName: 'CloudDNA-API',
         path: '/resources'
       }).response;
 
@@ -275,7 +276,7 @@ useEffect(() => {
 
   try {
     const response = await post({
-      apiName: 'resourceApi',
+      apiName: 'CloudDNA-API',
       path: '/analyze',
       options: { body: { ResourceId: resourceId } }
     }).response;
