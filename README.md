@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -68,3 +69,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+=======
+# aws-cloud-dna
+An AWS-based system designed to track, visualize, and manage the relationships and dependencies of cloud resources. The main goal is to enable safer infrastructure modifications and help with cost optimization.
+>>>>>>> 8ea7f84e160b0dbf8b0d7e7a395c2bd8be51d3b6
