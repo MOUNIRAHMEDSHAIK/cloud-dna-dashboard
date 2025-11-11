@@ -1,10 +1,9 @@
 // src/App.js
-// src/App.js
 import React, { useEffect, useState } from "react";
-import { fetchResources, analyzeResourceImpact } from "./api";
-import { Amplify } from 'aws-amplify';
-import { get, post } from '@aws-amplify/api-rest';
-import awsExports from './aws-exports';
+// ❌ REMOVED Amplify imports that caused compilation errors
+// import { Amplify, API } from 'aws-amplify'; 
+// import awsExports from './aws-exports';
+
 import ReactFlow, {
   Background,
   Controls,
@@ -20,12 +19,15 @@ import {
   Network, Cloud, Package, Info, Zap
 } from 'lucide-react';
 
-// ✅ Place this AFTER all imports
-Amplify.configure(awsExports);
+// ❌ REMOVED Amplify.configure(awsExports);
+
+// ✅ NEW: Hardcoded API endpoints from your aws-exports.js
+const API_BASE_URL = "https://vl0si5426i.execute-api.ap-south-1.amazonaws.com/Prod";
+const API_RESOURCES = `${API_BASE_URL}/resources`;
+const API_ANALYZE = `${API_BASE_URL}/analyze`;
 
 
-/* --- (keep your helper functions and components exactly as before) --- */
-/* getResourceColor, getResourceIcon, CustomNode, DepartmentNode, nodeTypes, createNodes */
+/* --- helper functions remain unchanged --- */
 const getResourceColor = (resourceType) => {
   if (!resourceType) return '#999';
   const colors = {
@@ -199,106 +201,89 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedNode, setSelectedNode] = useState(null);
-
   const [blastRadius, setBlastRadius] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-useEffect(() => {
-  async function fetchData() {
-    try {
-      const response = await get({
-        apiName: 'CloudDNA-API',
-        path: '/resources'
-      }).response;
-
-      const responseData = await response.body.json(); // ✅ rename to avoid ESLint no-undef
-      setResources(Array.isArray(responseData) ? responseData : (responseData.items || []));
-      setError(null);
-    } catch (err) {
-      console.error('API GET /resources error:', err);
-      const msg = err?.message || 'An error occurred while fetching data.';
-      setError(msg);
-      setResources([]);
-    } finally {
-      setIsLoading(false);
+  // ✅ CHANGED: Using fetch() with the correct hardcoded URL
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // ✅ NEW: Using the hardcoded URL
+        const res = await fetch(API_RESOURCES); 
+        const data = await res.json();
+        console.log("Fetched data:", data);
+        setResources(Array.isArray(data) ? data : (data.items || []));
+        setError(null);
+      } catch (err) {
+        console.error("API fetch error:", err);
+        setError(err.message || "Error fetching resources.");
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
-  fetchData();
-}, []);
-
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (resources.length > 0) {
-      console.log('Transforming resources into nodes and edges...');
       const graphNodes = createNodes(resources).map(node => ({
         ...node,
-        data: {
-          ...node.data,
-          isImpacted: blastRadius.includes(node.id)
-        }
+        data: { ...node.data, isImpacted: blastRadius.includes(node.id) }
       }));
 
       const graphEdges = [];
-      for (const resource of resources) {
-        if (resource.ParentVPC) {
-          if (resources.some(r => r.ResourceId === resource.ParentVPC)) {
-            graphEdges.push({
-              id: `e-${resource.ResourceId}-${resource.ParentVPC}`,
-              source: resource.ParentVPC,
-              target: resource.ResourceId,
-              animated: true,
-              type: 'smoothstep',
-              style: {
-                stroke: '#667eea',
-                strokeWidth: 2,
-                opacity: (blastRadius.includes(resource.ResourceId) || blastRadius.includes(resource.ParentVPC)) ? 1 : 0.4
-              }
-            });
-          }
+      for (const r of resources) {
+        if (r.ParentVPC && resources.some(x => x.ResourceId === r.ParentVPC)) {
+          graphEdges.push({
+            id: `e-${r.ResourceId}-${r.ParentVPC}`,
+            source: r.ParentVPC,
+            target: r.ResourceId,
+            animated: true,
+            type: 'smoothstep',
+            style: {
+              stroke: '#667eea',
+              strokeWidth: 2,
+              opacity: (blastRadius.includes(r.ResourceId) || blastRadius.includes(r.ParentVPC)) ? 1 : 0.4
+            }
+          });
         }
       }
-
       setNodes(graphNodes);
       setEdges(graphEdges);
     }
   }, [resources, blastRadius]);
 
+  // ✅ CHANGED: Use fetch() with the correct hardcoded URL
   const handleAnalyzeImpact = async (resourceId) => {
-  if (!resourceId) return;
+    if (!resourceId) return;
+    setIsAnalyzing(true);
+    setBlastRadius([]);
 
-  setIsAnalyzing(true);
-  setBlastRadius([]);
+    try {
+      // ✅ NEW: Using the hardcoded URL
+      const response = await fetch(API_ANALYZE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ResourceId: resourceId })
+      });
+      const result = await response.json();
+      console.log("Analyze API response:", result);
 
-  setNodes(prevNodes => prevNodes.map(n => ({
-    ...n,
-    data: { ...n.data, isImpacted: n.id === resourceId }
-  })));
-
-  try {
-    const response = await post({
-      apiName: 'CloudDNA-API',
-      path: '/analyze',
-      options: { body: { ResourceId: resourceId } }
-    }).response;
-
-    const resultData = await response.body.json(); // ✅ rename to avoid ESLint no-undef
-    console.log('Analyze API result:', resultData);
-
-    if (selectedNode?.data?.ResourceType === 'VPC') {
-      const impactedResources = resources
-        .filter(r => r.ParentVPC === resourceId)
-        .map(r => r.ResourceId);
-      setBlastRadius([resourceId, ...impactedResources]);
-    } else {
-      setBlastRadius([resourceId]);
+      if (selectedNode?.data?.ResourceType === "VPC") {
+        const impacted = resources
+          .filter(r => r.ParentVPC === resourceId)
+          .map(r => r.ResourceId);
+        setBlastRadius([resourceId, ...impacted]);
+      } else {
+        setBlastRadius([resourceId]);
+      }
+    } catch (err) {
+      console.error("Analyze API failed:", err);
+      alert("Analysis failed. Check your API Gateway logs or Lambda configuration.");
+    } finally {
+      setIsAnalyzing(false);
     }
-  } catch (err) {
-    console.error('Impact Analysis Failed:', err);
-    alert('Analysis failed. Check API Gateway logs / Lambda. Error: ' + (err.message || JSON.stringify(err)));
-  } finally {
-    setIsAnalyzing(false);
-  }
-};
+  };
 
 
   const onNodeClick = (event, node) => {
@@ -556,6 +541,7 @@ useEffect(() => {
                       border: 'none',
                       background: isAnalyzing ? '#4d1e9e' : 'linear-gradient(135deg, #FF5733 0%, #dc3545 100%)',
                       color: 'white',
+      
                       fontWeight: 'bold',
                       cursor: isAnalyzing ? 'not-allowed' : 'pointer',
                       display: 'flex',
@@ -619,5 +605,3 @@ function FlowWrapper() {
 }
 
 export default FlowWrapper;
-
-
